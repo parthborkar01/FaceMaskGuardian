@@ -1,457 +1,279 @@
-# Face Mask Detection Using Deep Learning
+# 😷 Face Mask Detection Using CNN
 
-A real-time face mask detection application built with **PyTorch, Convolutional Neural Networks (CNNs), and OpenCV**. The application detects faces from a webcam stream and classifies each detected face as `WithMask` or `WithoutMask` using a trained deep learning model.
+A real-time face mask detection application built with **PyTorch, a
+Convolutional Neural Network (CNN), and OpenCV**. The application detects faces
+from a webcam stream and classifies each detected face as `WithMask` or
+`WithoutMask`.
 
-The model is trained in Google Colab, and the trained checkpoint is deployed locally for real-time inference on CPU or GPU.
-
----
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [System Architecture](#system-architecture)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Model Details](#model-details)
-- [Training and Evaluation](#training-and-evaluation)
-- [Installation](#installation)
-- [Usage](#usage)
-- [Prediction Pipeline](#prediction-pipeline)
-- [Troubleshooting](#troubleshooting)
-- [Limitations](#limitations)
-- [Future Improvements](#future-improvements)
+The project includes a trained model, a webcam inference application, and a
+Jupyter notebook for training and evaluation.
 
 ---
 
-## Overview
+## 🚀 Overview
 
-This project demonstrates the application of deep learning to real-time computer vision.
+The application combines two computer vision steps:
 
-The system combines two components:
+1. **Face detection:** OpenCV's Haar Cascade locates faces in each webcam frame.
+2. **Mask classification:** A trained PyTorch CNN classifies each face crop.
 
-1. **Face Detection:** OpenCV's Haar Cascade classifier locates faces in webcam frames.
-2. **Mask Classification:** A custom CNN trained with PyTorch classifies each detected face into one of two categories:
-   - `WithMask`
-   - `WithoutMask`
-
-The application displays a bounding box, predicted class, and confidence score around each detected face.
-
-The model is trained using a face mask image dataset in Google Colab. Once training is complete, the model weights are downloaded and used for inference on a local machine.
-
-## Features
-
-- Real-time face detection through a webcam.
-- Custom CNN architecture implemented using PyTorch.
-- Binary classification of masked and unmasked faces.
-- Face detection using OpenCV Haar Cascades.
-- Confidence scores displayed alongside predictions.
-- CPU inference support for systems without a dedicated GPU.
-- Optional CUDA acceleration when compatible hardware is available.
-- Separate training and inference workflows.
-- Model evaluation using training, validation, and test datasets.
+Predictions are shown on the live video with a bounding box and confidence
+score. The application runs on CPU and automatically uses CUDA when available.
 
 ---
 
-## System Architecture
+## ✨ Features
 
-```text
-                Webcam
-                   |
-                   v
-           OpenCV Video Capture
-                   |
-                   v
-            Frame Preprocessing
-                   |
-                   v
-          Haar Cascade Face Detection
-                   |
-                   v
-             Face Extraction
-                   |
-                   v
-         Image Resize and Normalization
-                   |
-                   v
-             Trained CNN Model
-                   |
-                   v
-           Mask Classification
-                   |
-            +------+------+
-            |             |
-            v             v
-         WithMask     WithoutMask
-            |             |
-            +------+------+
-                   |
-                   v
-       Bounding Box and Confidence
-                   |
-                   v
-            Display Webcam Frame
-```
+- 🎥 Real-time webcam capture and preview
+- 🧑 Face detection using an OpenCV Haar Cascade
+- 🧠 CNN-based `WithMask` / `WithoutMask` classification
+- 📊 Prediction confidence displayed on each detected face
+- ⚡ CPU inference with optional CUDA acceleration
+- 🧪 Training, validation, and test workflow in a Jupyter notebook
+- 📈 Training and validation accuracy/loss graph
 
 ---
 
-## Technology Stack
+## 🛠 Tech Stack
 
 | Technology | Purpose |
 |---|---|
-| Python | Core programming language |
-| PyTorch | CNN implementation and model inference |
-| OpenCV | Face detection, webcam capture, and visualization |
-| Torchvision | Image preprocessing and transformations |
-| NumPy | Numerical operations and image processing |
-| Google Colab | Model training and experimentation |
+| Python | Application and training code |
+| PyTorch | CNN architecture, training, and inference |
+| Torchvision | Image transformations |
+| OpenCV | Webcam capture, face detection, and preview |
+| NumPy | Image and numerical operations |
+| Jupyter Notebook | Model training and evaluation |
+| KaggleHub | Dataset download in the training notebook |
 
 ---
 
-## Project Structure
+## 📦 Project Dependencies
+
+The application dependencies are listed in [`requirements.txt`](requirements.txt):
+
+- `torch`
+- `torchvision`
+- `opencv-python`
+- `numpy`
+
+The training notebook additionally uses `kagglehub`, `pandas`, `matplotlib`,
+and `scikit-learn`.
+
+> **Note:** The webcam preview uses OpenCV GUI functions. Install
+> `opencv-python`, not `opencv-python-headless`.
+
+---
+
+## 📂 Project Structure
 
 ```text
 FaceMaskDetection/
-│
+├── docs/
+│   └── training-metrics.png
 ├── model/
 │   └── face_mask_cnn.pth
-│
 ├── notebooks/
 │   └── faceMaskTrainCNN.ipynb
-│
 ├── src/
 │   ├── detector.py
 │   ├── faceDetector.py
 │   └── model.py
-│
-├── docs/
-│   └── training-metrics.png
-│
-├── requirements.txt
 ├── .gitignore
-└── README.md
+├── LICENSE
+├── README.md
+└── requirements.txt
 ```
 
-### Directory Description
-
-| Path | Description |
+| File or directory | Description |
 |---|---|
-| `model/` | Contains the trained CNN checkpoint. |
-| `notebooks/` | Contains the Google Colab training notebook. |
-| `src/model.py` | Defines the CNN architecture. |
-| `src/faceDetector.py` | Handles face detection. |
-| `src/detector.py` | Runs real-time webcam inference. |
-| `docs/` | Contains training graphs and project documentation. |
-| `requirements.txt` | Lists the required Python packages. |
+| `src/model.py` | Defines the CNN architecture |
+| `src/faceDetector.py` | Loads the Haar Cascade face detector |
+| `src/detector.py` | Runs live webcam inference |
+| `model/face_mask_cnn.pth` | Trained model weights |
+| `notebooks/faceMaskTrainCNN.ipynb` | Dataset download, training, and evaluation |
+| `docs/training-metrics.png` | Accuracy and loss plots from the notebook |
 
 ---
 
-## Model Details
+## 🧠 Model Details
 
-The project uses a custom Convolutional Neural Network implemented in PyTorch.
+The custom CNN takes an RGB image of size **224 × 224** and produces scores for
+two classes. Its feature extractor has five convolutional blocks with 16, 32,
+64, 128, and 256 channels, followed by fully connected layers of 1024 and 512
+units.
 
-The CNN learns visual features from labeled images and uses them to classify detected faces.
+### Class Mapping
 
-### Classification Classes
+| Output index | Class |
+|---:|---|
+| 0 | `WithMask` |
+| 1 | `WithoutMask` |
 
-| Output Index | Class | Description |
-|---:|---|---|
-| 0 | `WithMask` | The model predicts that a mask is present. |
-| 1 | `WithoutMask` | The model predicts that a mask is absent. |
+### Inference Preprocessing
 
-The class mapping must match the mapping used during training.
-
-### Input Configuration
-
-| Parameter | Value |
-|---|---|
-| Input image size | 224 × 224 pixels |
-| Input channels | 3 (RGB) |
-| Number of classes | 2 |
-| Input normalization mean | `[0.485, 0.456, 0.406]` |
-| Input normalization standard deviation | `[0.229, 0.224, 0.225]` |
-
-The preprocessing configuration above must match the transformations used during training.
-
-### Model Checkpoint
-
-The trained weights are stored in:
+The webcam face crop is converted from BGR to RGB, resized to 224 × 224, and
+normalized with the values used in the notebook:
 
 ```text
-model/face_mask_cnn.pth
+Mean: [0.485, 0.456, 0.406]
+Std:  [0.229, 0.224, 0.225]
 ```
 
-The checkpoint contains the learned model parameters. The CNN architecture is defined separately in the source code.
+The class mapping and preprocessing must match the training configuration for
+the checkpoint to produce meaningful predictions.
 
 ---
 
-## Training and Evaluation
+## 📊 Training and Evaluation
 
-Model training is performed in Google Colab using PyTorch.
+The notebook downloads the
+[`ashishjangra27/face-mask-12k-images-dataset`](https://www.kaggle.com/datasets/ashishjangra27/face-mask-12k-images-dataset)
+dataset using KaggleHub. It uses the `Train`, `Validation`, and `Test` folders
+with PyTorch `ImageFolder`.
 
-The training workflow includes:
+| Dataset split | Images |
+|---|---:|
+| Training | 10,000 |
+| Validation | 800 |
+| Test | 992 |
 
-1. Loading the face mask dataset.
-2. Preprocessing and transforming images.
-3. Creating training, validation, and test datasets.
-4. Initializing the custom CNN.
-5. Training the model using labeled images.
-6. Evaluating performance on validation and test datasets.
-7. Saving the trained model weights for local deployment.
+The recorded notebook results are **98.79% test accuracy** and `0.0793` test
+loss. The confusion matrix is ordered `WithMask`, `WithoutMask` for both actual
+rows and predicted columns:
 
-### Reported Test Performance
+| Actual \ Predicted | WithMask | WithoutMask |
+|---|---:|---:|
+| WithMask | 475 | 8 |
+| WithoutMask | 4 | 505 |
 
-The training notebook reports **98.79% test accuracy** on a test set containing 992 images.
+### 📈 Training Graphs
 
-The following metrics were recorded during a 10-epoch training run:
+Training and validation accuracy and loss across 10 epochs:
 
-| Epoch | Training Accuracy | Validation Accuracy |
-|---:|---:|---:|
-| 1 | 94.22% | 97.12% |
-| 2 | 97.45% | 97.38% |
-| 3 | 98.11% | 99.12% |
-| 4 | 98.63% | 98.88% |
-| 5 | 98.85% | 99.38% |
-| 6 | 98.57% | 98.50% |
-| 7 | 98.82% | 99.75% |
-| 8 | 99.10% | 99.50% |
-| 9 | 99.43% | 99.62% |
-| 10 | 98.96% | 99.00% |
+![Training vs validation loss and accuracy](docs/training-metrics.png)
 
-> **Note:** These are the metrics reported by the training notebook. Test accuracy alone does not establish how reliably the model will perform on real-world webcam images. Performance also depends on dataset quality, class distribution, preprocessing, and test-set independence.
-
-### Training Visualization
-
-The following image contains the training and validation accuracy and loss curves.
-
-![Training and validation accuracy and loss](docs/training-metrics.png)
+These are results reported by the notebook on its test split. They do not
+guarantee the same performance on live webcam images.
 
 ---
 
-## Installation
+## ⚙️ Installation
 
-### Prerequisites
+### 1. Create a Virtual Environment
 
-- Python 3.10 or newer.
-- A working webcam.
-- Git (optional).
-- A compatible CPU or CUDA-enabled GPU.
-
-### 1. Clone the Repository
-
-```bash
-git clone <your-repository-url>
-cd FaceMaskDetection
-```
-
-Replace `<your-repository-url>` with your GitHub repository URL.
-
-Alternatively, download the repository and open its directory in VS Code.
-
-### 2. Create a Virtual Environment
-
-On Windows:
+From the project root, run:
 
 ```powershell
 py -m venv .venv
-```
-
-Activate the environment:
-
-```powershell
 .\.venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks activation, use the environment's Python executable directly:
+### 2. Install the Application Dependencies
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install --upgrade pip
-```
-
-### 3. Install Dependencies
-
-```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-Ensure that `requirements.txt` includes the packages required by the application, including PyTorch, Torchvision, and `opencv-python`.
+If PowerShell does not allow environment activation, use the virtual
+environment's Python executable directly:
 
-**Important:** Use the GUI-enabled `opencv-python` package. Do not install `opencv-python-headless` for this application because the webcam preview uses OpenCV GUI functions.
-
-### 4. Verify the Installation
-
-Run:
-
-```python
-import cv2
-import torch
-import torchvision
-
-print("OpenCV:", cv2.__version__)
-print("PyTorch:", torch.__version__)
-print("Torchvision:", torchvision.__version__)
-print("CUDA available:", torch.cuda.is_available())
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
 ---
 
-## Usage
+## ▶️ Run the Application
 
-### 1. Verify the Model Checkpoint
-
-Ensure that the trained checkpoint is located at:
-
-```text
-model/face_mask_cnn.pth
-```
-
-If your application supports the legacy filename, you can also use:
-
-```text
-model/mask_detector.pth
-```
-
-The checkpoint architecture, class mapping, and preprocessing must match those used during training.
-
-### 2. Start the Application
-
-From the project root, run:
+From the project root:
 
 ```powershell
 python .\src\detector.py
 ```
 
-The application attempts to open webcam device `0`.
+The application uses webcam device `0`. Press **Q** while the preview window is
+focused to stop the application.
 
-### 3. Run Real-Time Detection
-
-Once the webcam window opens:
-
-- Position your face within the camera view.
-- Allow the application to detect your face.
-- Observe the predicted mask class and confidence score.
-- Press **Q** while the preview window is focused to stop the application.
-
-The application releases the webcam and closes the OpenCV windows when it exits.
+The model is loaded from `model/face_mask_cnn.pth`. The legacy filename
+`model/mask_detector.pth` is also accepted. CUDA is used when available;
+otherwise, inference runs on CPU.
 
 ---
 
-## Prediction Pipeline
+## 📓 Run the Training Notebook
 
-For each webcam frame, the application performs the following operations:
+The notebook downloads the dataset from KaggleHub and therefore requires
+internet access. Install its additional packages into the same environment:
 
-1. Capture the frame using OpenCV.
-2. Convert the frame to grayscale for Haar Cascade face detection.
-3. Detect face locations.
-4. Crop each detected face.
-5. Convert the crop from BGR to RGB.
-6. Resize the image to 224 × 224 pixels.
-7. Apply the same normalization used during training.
-8. Convert the image into a PyTorch tensor.
-9. Run inference using the trained CNN.
-10. Convert model outputs into class probabilities.
-11. Draw a bounding box, predicted class, and confidence score.
-
-The model uses the predicted class to display either `WithMask` or `WithoutMask`.
-
----
-
-## Troubleshooting
-
-### Could Not Open Webcam
-
-Possible causes:
-
-- Another application is using the camera.
-- Camera permissions are disabled.
-- The webcam is disconnected.
-- The selected camera index is incorrect.
-
-Try closing other camera applications, checking system permissions, and confirming that the webcam is available.
-
-### Could Not Read Webcam Frame
-
-Verify that the camera is enabled and functioning correctly. Restart the application after checking the camera connection.
-
-### `cv2.imshow()` Is Not Implemented
-
-Install the GUI-enabled OpenCV package in the same Python environment used to run the application:
-
-```bash
-pip uninstall opencv-python-headless
-pip install opencv-python
+```powershell
+python -m pip install kagglehub pandas matplotlib scikit-learn
 ```
 
-### Model Checkpoint Not Found
-
-Confirm that the checkpoint exists at the expected path:
-
-```text
-model/face_mask_cnn.pth
-```
-
-Check the filename and run the application from the project root.
-
-### Model Loading Error
-
-A state-dictionary loading error may indicate that:
-
-- The CNN architecture differs from the training architecture.
-- The checkpoint contains a different object or dictionary structure.
-- The model layer dimensions do not match.
-- The checkpoint was saved using a different model definition.
-
-Use the same CNN architecture that was used to train the checkpoint.
-
-### Predictions Are Inaccurate
-
-Check the following:
-
-- Input dimensions match the training configuration.
-- RGB/BGR conversion is correct.
-- Image normalization matches the training transformations.
-- The class-to-index mapping is correct.
-- The webcam provides sufficient lighting.
-- Faces are reasonably visible and positioned within the frame.
-
-A confidence score represents the model's output confidence; it does not guarantee that a prediction is correct.
+Open `notebooks/faceMaskTrainCNN.ipynb` in Jupyter or VS Code and run its cells.
+The notebook trains the CNN, evaluates the test split, plots metrics, and saves
+the weights as `face_mask_cnn.pth`. Place the resulting checkpoint in the
+project's `model/` directory to use it with the webcam application.
 
 ---
 
-## Limitations
+## 🧭 Prediction Pipeline
 
-- Haar Cascade may miss faces under challenging lighting, pose, or occlusion conditions.
-- Classification quality depends on the diversity and quality of the training dataset.
-- A model trained on ordinary masked and unmasked faces may confuse masks with other objects covering the face.
-- High test accuracy does not guarantee equivalent real-world performance.
-- The application classifies detected faces; it does not independently verify the material or authenticity of a face covering.
+For each video frame, the application:
 
----
-
-## Future Improvements
-
-Potential extensions include:
-
-- Evaluate false-positive and false-negative rates.
-- Add more diverse examples of face occlusion to the training dataset.
-- Compare Haar Cascade with modern face detection models.
-- Optimize inference speed for CPU-based systems.
-- Add a confidence threshold and an uncertain prediction state.
-- Develop a simple graphical user interface.
-- Export the model to an optimized inference format.
-- Evaluate robustness under different lighting conditions, face orientations, and camera qualities.
+1. Captures a frame from the webcam.
+2. Converts it to grayscale for Haar Cascade face detection.
+3. Crops each detected face and converts it to RGB.
+4. Resizes and normalizes the crop.
+5. Runs the CNN and converts its output to class probabilities.
+6. Draws the predicted class and confidence on the frame.
 
 ---
 
-## License
+## 🛠 Troubleshooting
 
-Add the license that applies to your project and verify that it is compatible with the licenses of the datasets and third-party components you use.
+### Webcam does not open
+
+Close other applications that may be using the camera, check operating-system
+camera permissions, and try another camera index in `src/detector.py`.
+
+### `cv2.imshow()` is not implemented
+
+Install `opencv-python` in the same environment used to run the app. The
+headless OpenCV package does not support the preview window.
+
+### Model checkpoint is missing or fails to load
+
+Check that the checkpoint is located at `model/face_mask_cnn.pth` (or uses the
+supported legacy name `model/mask_detector.pth`) and matches the architecture
+in `src/model.py`.
+
+### Predictions are inaccurate
+
+Check lighting and face visibility. Confirm that the checkpoint uses the
+documented class order and image normalization. Confidence is the model's
+estimated probability, not a guarantee that a prediction is correct.
 
 ---
 
-## Author
+## ⚠️ Limitations
 
-**Your Name**
+- Haar Cascade detection may be less reliable with poor lighting, unusual face
+  angles, or partial occlusion.
+- Test-set accuracy may not reflect performance on webcam images.
+- Predictions depend on the training data and may not generalize to every mask,
+  camera, or environment.
 
-Face Mask Detection using PyTorch, CNN, and OpenCV.
+---
+
+## 📄 License
+
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
+The downloaded dataset is subject to its own terms.
+
+---
+
+## 👨‍💻 Developer
+
+**Parth Borkar**
